@@ -1,0 +1,184 @@
+#include <Arduino.h>
+#include <JC_Button.h>
+#define BUTTON_MENU 5
+#define prz_up 6
+#define prz_down 7
+#define save_button 5
+Button podnoszenie(prz_up,25);//przycisk góra
+Button opuszczanie(prz_down,25);//przycisk dół
+Button prz_zapisz(save_button,25);//przycisk dół
+Button p3(10,25);
+int pot1;
+int pot2;
+int pot_gora;
+int wartosc_podnoszenia;
+byte czujnik_polozenia;
+byte wartosc_opuszczania;
+byte zmienna_pomocnicza=0;
+boolean zmienna2;
+boolean stan=0;
+boolean turnononebutton =false;
+boolean onebutton=false;
+bool opuszczanie_wlaczone=false;
+bool menu;// służy do wybrania trybu pracy czy ma się opuszczać do stanu na potencjometrze czy do ostatniego stanu na
+//boolean wysokosc=0;
+bool stan1=false;
+byte zmienna;
+void setup() {
+ pinMode(A1, INPUT);
+ pinMode(A2, INPUT);
+ pinMode(A3, INPUT);
+ pinMode(A6, INPUT);
+ pinMode(A7, INPUT);
+ pinMode(prz_up, INPUT_PULLUP);//przycisk góra
+ pinMode(prz_down, INPUT_PULLUP);//gprzysik dół
+ pinMode(save_button, INPUT_PULLUP);//gprzysik dół
+ pinMode(10, INPUT_PULLUP);
+ pinMode(BUTTON_MENU, INPUT_PULLUP);
+ pinMode(11, OUTPUT );
+ pinMode(9, OUTPUT);
+ Serial.begin(9600);
+ podnoszenie.begin();
+ opuszczanie.begin();
+ prz_zapisz.begin();
+ p3.begin();
+
+}
+void dol(){
+ digitalWrite(9,1);
+ digitalWrite(11,0); 
+}
+void gora(){
+ digitalWrite(11,1);
+ digitalWrite(9,0);
+}
+void stop(){
+  stan1=false;
+  digitalWrite(11,0);
+  digitalWrite(9,0);
+
+}
+
+void sprawdzaniewszystkichzmiennych(){
+  Serial.print("czujnik_polozenia : ");
+  Serial.print(czujnik_polozenia);
+  Serial.print(" ");
+  Serial.print(analogRead(A3));
+  Serial.print("        wartosc_opuszczaniazenia : ");
+  Serial.print(wartosc_opuszczania);
+  Serial.print(" ");
+  Serial.print("        wartosc_podnoszenia : ");
+  Serial.print(wartosc_podnoszenia);
+  Serial.print("    ");
+  Serial.print(zmienna);
+  Serial.print("    ");
+  Serial.print(zmienna_pomocnicza);
+  Serial.print("        stan : ");
+  Serial.print(stan);
+  Serial.print("        A6 : ");
+  Serial.print(analogRead(A6));
+  Serial.print("        A7 : ");
+  Serial.print(analogRead(A7));
+  Serial.print("        menu : ");
+  Serial.print(digitalRead(5));
+  Serial.print("        zmienna pomoc : ");
+  Serial.print(zmienna_pomocnicza);
+  Serial.println();
+}
+void loop() {
+  pot1 = analogRead(A3);//czujnik
+  pot2 = analogRead(A2);//pot dol
+  pot_gora= analogRead(A1);
+  czujnik_polozenia = map(pot1, analogRead(A6), analogRead(A7), 50, 0);
+  wartosc_opuszczania = map(pot2, 0, 1023, 0, 50);
+  wartosc_podnoszenia = map(pot_gora, 0, 1023, 0, 50);
+  podnoszenie.read();
+  opuszczanie.read();
+  prz_zapisz.read();
+  p3.read();
+  if(prz_zapisz.wasPressed()){
+    zmienna_pomocnicza=czujnik_polozenia;
+  }
+  if(digitalRead(BUTTON_MENU)==HIGH){
+    menu=false;//tryb automatyczny
+  }else{
+    menu=true;
+  }
+  if(menu==true){
+    zmienna_pomocnicza=czujnik_polozenia;
+  }
+  if(stan1==false){
+    zmienna = czujnik_polozenia;
+  }
+  if(podnoszenie.wasPressed()){
+    turnononebutton = true;
+    onebutton =false;
+    if(stan1==false){ 
+      stan=1;
+      stan1=true;
+      zmienna_pomocnicza=czujnik_polozenia;
+    }else
+    {
+      stop();
+    }
+  }
+  if(opuszczanie.wasPressed()){
+    turnononebutton =true;
+    onebutton =true;
+    if(stan1==false){
+      stan=0;
+      stan1=true;
+    }else{
+      stop();
+    }
+  }
+
+  if(p3.wasPressed() ){
+    /*
+    if(onebutton==true){
+      if(stan1==false){ 
+        stan=1;
+        stan1=true;
+        onebutton=false;
+        zmienna_pomocnicza=czujnik_polozenia;
+  }
+  if(digitalRead(8)==HIGH || digitalRead(3)==HIGH){
+      stop();
+    }
+    }
+  if(onebutton==false){
+    if(stan1==false){
+      stan=0;
+      stan1=true;
+      onebutton=true;
+  }
+  }
+  if(digitalRead(8)==HIGH || digitalRead(3)==HIGH){
+      stop();
+    }
+    */
+  }
+
+
+  if(stan==1){
+    zmienna=wartosc_podnoszenia;
+  }
+  if(stan==0 && menu == false){
+    zmienna = zmienna_pomocnicza;
+  }
+  if(stan==0 && menu == true){
+    zmienna=wartosc_opuszczania;
+  }
+  if(stan1==true){
+  if (zmienna>czujnik_polozenia){
+      gora();
+    }
+    if(zmienna<czujnik_polozenia ){
+      dol();
+    }
+  }
+  if(zmienna==czujnik_polozenia ){
+    stop();
+  }
+  sprawdzaniewszystkichzmiennych();
+}
